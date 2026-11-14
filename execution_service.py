@@ -158,6 +158,16 @@ class HyperLiquidExecutionService:
         return round(x, -int(floor(log10(abs(x))) - 4))
 
 
+    @staticmethod
+    def _error_message(result) -> str:
+        # SDK errors come back as {"status": "err", "response": "text"}; successful
+        # responses use a dict. Normalise both before putting them in a message.
+        response = result.get("response")
+        if isinstance(response, dict):
+            return str(response.get("error", response))
+        return str(response)
+
+
     def set_tp(self, AssetName : str, tpPrice : float, assetAmount : float, is_buy : bool):
             
         tpPrice = self.round_to_5_sig_digs(tpPrice)
@@ -177,7 +187,7 @@ class HyperLiquidExecutionService:
                 self.webhook.send(f'@everyone Error while setting TP for {AssetName} \nError: {result["response"]["data"]["statuses"][0]["error"]}')
         else:
             self.webhook.send(f"@everyone Error setting TP for {AssetName}.")
-            self.webhook.send(f'Error: {result["response"]["error"]}')
+            self.webhook.send(f'Error: {self._error_message(result)}')
 
     
     def set_sl(self, AssetName : str, slPrice : float, assetAmount : float, is_buy : bool):
@@ -199,7 +209,7 @@ class HyperLiquidExecutionService:
                 self.webhook.send(f'@everyone Error while setting SL for {AssetName} \nError: {result["response"]["data"]["statuses"][0]["error"]}')
         else:
             self.webhook.send(f"@everyone Error setting SL for {AssetName}.")
-            self.webhook.send(f'Error: {result["response"]["error"]}')
+            self.webhook.send(f'Error: {self._error_message(result)}')
         
         
     def get_decimals_forAsset(self, rawAssetName : str):
@@ -229,9 +239,9 @@ class HyperLiquidExecutionService:
             
             try:
                 error = status["error"]
-                self.webhook.send(f'@everyone Error while cancelling Limit Order for {rawAssetName} with oid {oid}. Error: {error}')
-            except KeyError:
-                self.webhook.send(f'@everyone UNKNOWN Error while cancelling Limit Order for {rawAssetName} with oid {oid}.')
+            except (KeyError, TypeError):
+                error = status
+            self.webhook.send(f'@everyone Error while cancelling Limit Order for {rawAssetName} with oid {oid}. Error: {error}')
             
     
     
@@ -281,7 +291,7 @@ class HyperLiquidExecutionService:
                 return 1
         else:
             self.webhook.send(f"@everyone Error opening limit position for {rawAssetName}.")
-            self.webhook.send(f'Error: {order_result["response"]["error"]}')
+            self.webhook.send(f'Error: {self._error_message(order_result)}')
             return None
     
     def place_market_order(self, rawAssetName : str , is_buy : bool, assetamount : float) -> Optional[float]:  
@@ -305,7 +315,7 @@ class HyperLiquidExecutionService:
                     return None
         else:
             self.webhook.send(f"@everyone Error opening position for {rawAssetName}. Retrying in 5.")
-            self.webhook.send(f'Error: {order_result["response"]["error"]}')
+            self.webhook.send(f'Error: {self._error_message(order_result)}')
             return None
             
         
@@ -350,9 +360,9 @@ class HyperLiquidExecutionService:
                 try:
                     filled = status["filled"]
                     self.webhook.send(f'@everyone Closed position for {rawAssetName}; filled {filled["totalSz"]} @{filled["avgPx"]}')
-                except KeyError:
+                except (KeyError, TypeError):
                     self.webhook.send(f'(close position) Error while filling {rawAssetName}')
-                    print(f'Error: {status["error"]}')
+                    print(f'Error: {status}')
             
             
     def close_all_positions(self):
@@ -366,9 +376,9 @@ class HyperLiquidExecutionService:
                     try:
                         filled = status["filled"]
                         self.webhook.send(f'@everyone Closed position for {i}; filled {filled["totalSz"]} @{filled["avgPx"]}')
-                    except KeyError:
+                    except (KeyError, TypeError):
                         self.webhook.send(f'(close position) Error while filling {i}')
-                        print(f'Error: {status["error"]}')
+                        print(f'Error: {status}')
     
     
     def get_totalAccValue(self) -> float:

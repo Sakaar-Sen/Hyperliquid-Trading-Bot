@@ -1,4 +1,4 @@
-hyperliquid-python-sdk==0.3.0
+hyperliquid-python-sdk==0.24.0
 discord==2.3.2
 discord.py==2.3.2
 ccxt==4.1.10
