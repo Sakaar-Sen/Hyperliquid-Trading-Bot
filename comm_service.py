@@ -1,6 +1,9 @@
 import discord
 from screener_service import Screener
 from screener_service import Asset
+from screener_service import SUPPORTED_TFS
+from screener_service import STRAT_TYPES
+from screener_service import MAX_INDICATOR_LENGTH
 import asyncio
 from execution_service import HyperLiquidExecutionService
 from typing import Optional
@@ -30,13 +33,11 @@ class CommunicationService(discord.Client):
         
         for a in self.screener.assets:
             a : Asset
-            trend = "Up" if a.hmaTrend else "down"
-            trend = "Initializing" if a.hmaTrend == None else trend
-            ordertype = "SL Enabled" if a.setSl else "Market"
-            ordertype_heading = "Buy with" if a.setSl == False else "Risk with"
+            trend = "Up" if a.trend else "down"
+            trend = "Initializing" if a.trend == None else trend
             side = "Long" if a.is_longStrat else "Short"
             
-            msg += f"ID: {a.id} \nAsset: {a.coinpair} ({int(a.leverage)}x {side}) {a.tf} \nTrend: {a.hmalength} {trend} \n{ordertype_heading}: {a.txn_USDTAmount} ({ordertype}) \n" + '-' * 40 + "\n"
+            msg += f"ID: {a.id} \nAsset: {a.coinpair} ({int(a.leverage)}x {side}) {a.tf} \nTrend: {a.stratType.upper()} {a.length} {trend} \nSize: {a.txn_USDTAmount} \n" + '-' * 40 + "\n"
         
         hlbot = self.hlbot
         
@@ -245,25 +246,45 @@ class CommunicationService(discord.Client):
                 return        
         
         if message.content.startswith("$add"):
-            # $add <rawAssetName> <tf> <sl> <hma> <size> <leverage> <is_long>
+            # $add <rawAssetName> <tf> <type : hma/ma> <length> <usdt_size> <leverage> <is_long>
             print("inside add")
             args = message.content.split(" ")
+            usage = "Usage: $add <rawAssetName> <tf> <type : hma/ma> <length> <usdt_size> <leverage> <is_long>"
+
             if len(args) != 8:
-                await message.channel.send("Invalid arguments\nUsage: $add <rawAssetName> <tf> <sl : 1/0> <hma> <size> <leverage> <is_long>")
+                await message.channel.send(f"Invalid arguments\n{usage}")
                 return
-            
-            asset = args[1].upper()
-            tf = args[2].lower()
-            sl = True if args[3] == "1" else False
-            hma = int(args[4])
-            size = float(args[5])
-            leverage = int(args[6])
-            is_long = True if args[7] == "1" else False
-            
-            
-            self.screener.addAsset(asset, tf, sl, hma, size, leverage, is_long)
-                        
-            await message.channel.send(f"Added {asset} {tf}")
+
+            try:
+                asset = args[1].upper()
+                tf = args[2].lower()
+                stratType = args[3].lower()
+                length = int(args[4])
+                size = float(args[5])
+                leverage = int(args[6])
+                is_long = True if args[7] == "1" else False
+            except:
+                await message.channel.send(f"Invalid arguments\n{usage}")
+                return
+
+            if stratType == "sma":
+                stratType = "ma"
+
+            if stratType not in STRAT_TYPES:
+                await message.channel.send(f"Invalid strategy type '{args[3]}'. Use one of: {', '.join(STRAT_TYPES)}")
+                return
+
+            if tf not in SUPPORTED_TFS:
+                await message.channel.send(f"Invalid timeframe '{tf}'. Use one of: {', '.join(SUPPORTED_TFS)}")
+                return
+
+            if length <= 0 or length > MAX_INDICATOR_LENGTH:
+                await message.channel.send(f"Length must be between 1 and {MAX_INDICATOR_LENGTH}")
+                return
+
+            self.screener.addAsset(asset, tf, length, size, leverage, is_long, stratType)
+
+            await message.channel.send(f"Added {asset} {tf} {stratType.upper()} {length}")
             msg = self.get_assetListMsg()
             await message.channel.send(msg)
             
@@ -329,32 +350,6 @@ class CommunicationService(discord.Client):
             hlbot = self.hlbot
             hlbot.set_leverage(rawAssetName, lev)
             
-            
-        
-        if message.content.startswith("$hma"):
-            # $hma <id> <length>
-            args = message.content.split(" ")
-            if len(args) != 3:
-                await message.channel.send("Invalid arguments\nUsage: $hma <id> <length>")
-                return
-            
-            id = None
-            length = None
-            try:
-                id = int(args[1])
-                length = int(args[2])
-            except:
-                await message.channel.send("Invalid arguments")
-                return
-            
-            for a in self.screener.assets:
-                a : Asset
-                if a.id == id:
-                    a.changehma(length)
-                    await message.channel.send(f"Successfully set HMA Length for {a.id} {a.coinpair} to {length}")
-                    return
-                
-            await message.channel.send("Invalid ID")
             
         
         if message.content.startswith("$amt"):
@@ -436,9 +431,8 @@ $close <rawAssetName>
 $closeall
 
 Automated Trading:
-$add <rawAssetName> <tf> <sl : 1/0> <hma> <usdt_size> <leverage> <is_long>
+$add <rawAssetName> <tf> <type : hma/ma> <length> <usdt_size> <leverage> <is_long>
 $remove <id>
-$hma <id> <length>
 $amt <id> <usdt_size>
 
 Others:

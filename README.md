@@ -9,7 +9,7 @@ This bot is designed to automate and streamline your trading experience on Hyper
  - **Enhanced Speed:** Faster Experience lower latency and faster order placements compared to manual UI-based trading.
 
 ## Automated Trading
-- **Strategy Automation:** Automate a trading strategy with detailed control over parameters like assets, timeframes, leverage, and moving averages. The strategy is based on [Hull Suite](https://www.tradingview.com/script/hg92pFwS-Hull-Suite/).
+- **Strategy Automation:** Automate a trading strategy with detailed control over parameters like assets, timeframes, leverage, and moving averages. Two strategies are available: the [Hull Suite](https://www.tradingview.com/script/hg92pFwS-Hull-Suite/) HMA slope strategy, and a simple moving average (SMA) crossover strategy.
 - **Reduced Human Error:** Removes the influence of human emotions and the need to constantly monitor charts, leading to more consistent and reliable trading outcomes.
 - **Live Alerts:** Receive instant notifications via discord webhook whenever a position is opened or closed, keeping you continuously informed about your trading activities.
 
@@ -25,9 +25,8 @@ This bot is designed to automate and streamline your trading experience on Hyper
 | `$lev`        | `$lev <rawAssetName> <lev>`                                                                                             | Adjust the leverage for the specified asset to the given level.                                            |                                                                                                  | Decrease the leverage for the specified asset.                                                            |
 | `$close`      | `$close <rawAssetName>`                                                                                                 | Close the position for the specified asset.                                                               |
 | `$closeall`   | `$closeall`                                                                                                            | Close all open positions.                                                                                 |
-| `$add`        | `$add <rawAssetName> <tf> <sl : 1/0> <hma> <usdt_size> <leverage> <is_long>`                                           | Add an automated trading strategy for the specified asset with parameters including timeframe, stop-loss, moving average, trade size, leverage, and direction. |
+| `$add`        | `$add <rawAssetName> <tf> <type : hma/ma> <length> <usdt_size> <leverage> <is_long>`                                   | Add an automated trading strategy for the specified asset. `type` selects HMA (slope flip) or MA/SMA (price crosses the MA). Remaining params: timeframe, indicator length, trade size, leverage, and direction. |
 | `$remove`     | `$remove <id>`                                                                                                         | Remove an automated trading strategy by its ID.                                                            |
-| `$hma`        | `$hma <id> <length>`                                                                                                   | Adjust the moving average length for the strategy with the specified ID.                                  |
 | `$amt`        | `$amt <id> <usdt_size>`                                                                                               | Adjust the trade size for the strategy with the specified ID.                                             |
 | `$list`       | `$list`                                                                                                                | List all active trading strategies.                                                                       |
 | `$open`       | `$open`                                                                                                                | Display all open positions and orders.                                                                              |
@@ -38,9 +37,14 @@ This bot is designed to automate and streamline your trading experience on Hyper
 $long btc 1000 3
 ```
 
-- To start a new long-only strategy on BTC on the 4H timeframe without using stop loss with each order being worth $3000 using 2x leverage
+- To start a new long-only strategy on BTC on the 4H timeframe with each order being worth $3000 using 2x leverage, using the HMA strategy with a length of 34
 ```shell
-$add btc 4h 0 34 3000 2 1
+$add btc 4h hma 34 3000 2 1
+```
+
+- Same idea, but using a 50-period SMA and going long when price closes above it
+```shell
+$add btc 4h ma 50 3000 2 1
 ```
 
 

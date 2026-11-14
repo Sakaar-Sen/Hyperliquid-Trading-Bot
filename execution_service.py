@@ -309,38 +309,11 @@ class HyperLiquidExecutionService:
             return None
             
         
-    def generate_order(self, rawAssetName : str, USDTAmount : int, is_long : bool, setSl : bool = False, slPrice : Optional[float] = None):
-        
-        # AssetName = rawAssetName.upper()
-        # current_price = self.get_last_price(rawAssetName)
-        
-        
-        # if AssetName in specialAssets:
-        #     AssetName = "k" + rawAssetName
-        #     current_price = current_price * 1000  
-        #     slPrice = slPrice * 1000 if slPrice != None else None
-        
+    def generate_order(self, rawAssetName : str, USDTAmount : int, is_long : bool):
         
         AssetName = self.get_asset_name(rawAssetName)
         current_price = self.get_last_price(rawAssetName)
         current_price = self.get_correct_price(AssetName, current_price)
-        
-        if slPrice != None:
-            slPrice = self.get_correct_price(AssetName, slPrice)
-
-        if setSl:
-            if slPrice == None:
-                self.webhook.send(f"@everyone SL Price is not set for {rawAssetName}. Unable to place order")
-                return
-            
-            # if slPrice > current_price:
-            #     self.webhook.send(f"@everyone SL Price is higher than current price for {rawAssetName}. Unable to place order")
-            #     return
-            
-            risk_amount = USDTAmount
-            pct_current_sl = (current_price - slPrice) / current_price
-            USDTAmount = risk_amount / pct_current_sl  
-            
         
         info = self.get_info_forAsset(rawAssetName)
         szDecimal = info['szDecimals']
@@ -360,13 +333,6 @@ class HyperLiquidExecutionService:
         
 
         res = self.place_market_order(rawAssetName, is_long, assetAmount)
-        
-        if res != None:
-            # self.webhook.send(f'@everyone Position Size is: {current_price * assetAmount} USDT.')
-        
-            if setSl:
-                #negative is_long because we want to set SL for the opposite side
-                self.set_sl(AssetName, slPrice, res, not is_long)
     
     
         
