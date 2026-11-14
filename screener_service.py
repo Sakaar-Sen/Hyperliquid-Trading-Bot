@@ -1,6 +1,6 @@
 from typing import Optional, List
 import pandas as pd
-import pandas_ta as ta
+import pandas_ta_classic as ta
 import ccxt
 from execution_service import HyperLiquidExecutionService
 from discord import SyncWebhook
@@ -128,7 +128,7 @@ class Asset:
     
     def generateSignalHMA(self):
         df = self.history
-        df["HMA"] = df.ta.hma(series=df["Close"], length=self.length)
+        df["HMA"] = df.ta.hma(length=self.length)
         last = df["HMA"].iloc[-2] 
         secondLast = df["HMA"].iloc[-3]
         
@@ -155,7 +155,7 @@ class Asset:
     
     def generateSignalMA(self):
         df = self.history
-        df["MA"] = df.ta.sma(series=df["Close"], length=self.length)
+        df["MA"] = df.ta.sma(length=self.length)
         close = df["Close"].iloc[-2]
         ma = df["MA"].iloc[-2]
         

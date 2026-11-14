@@ -55,7 +55,7 @@ $add btc 4h ma 50 3000 2 1
 git clone https://github.com/Sakaar-Sen/Hyperliquid-Trading-Bot
 ```
 
-2. Install Dependencies. Preferably use Python3.10.14
+2. Install Dependencies. Requires Python 3.11 or newer.
 ```bash
 pip install -r requirements.txt
 ```

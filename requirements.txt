@@ -4,6 +4,6 @@ discord.py==2.3.2
 ccxt==4.1.10
 requests==2.31.0
 pandas==2.2.2
-numpy==1.23.2
-pandas_ta==0.3.14b0
+numpy==2.4.6
+pandas-ta-classic==0.9.0
 memory-profiler==0.61.0
